@@ -1,3 +1,4 @@
+import { allAdminIds } from "./admins.js";
 import { autoPublishBank, autoPublishDaily, createBot } from "./bot.js";
 import { config } from "./config.js";
 
@@ -8,7 +9,8 @@ console.log(
   JSON.stringify({
     ok: true,
     channel: config.channelId,
-    admins: config.adminIds,
+    owners: config.adminIds,
+    admins: allAdminIds(),
     sibstar: config.sibstarBase,
     covers: "adaptive-icon-theme",
     dailyEveryHours: config.dailyEveryHours,

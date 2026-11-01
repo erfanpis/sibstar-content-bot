@@ -2,7 +2,7 @@
   "name": "free-channel-content-bot",
   "version": "1.0.0",
   "private": true,
-  "description": "Free Telegram channel content bot (caption + image via free AI APIs)",
+  "description": "SibStar Telegram channel content bot (catalog posts, covers, admin templates)",
   "type": "module",
   "scripts": {
     "dev": "tsx watch src/index.ts",

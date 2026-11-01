@@ -6,6 +6,7 @@ import { createCanvas, GlobalFonts, loadImage, type SKRSContext2D } from "@napi-
 import sharp from "sharp";
 import { parseCatalogShamsi, shamsiDayTitle, shamsiKey } from "./shamsi.js";
 import { absUrl, appPageUrl, type SibApp } from "./sibstar.js";
+import { getTemplates } from "./templates.js";
 
 const W = 1080;
 const H = 1080;
@@ -215,12 +216,8 @@ function tagFor(app: SibApp): string {
 
 /** HTML caption — app names are tappable links to SibStar pages. */
 export function updatesCaption(apps: SibApp[], date = new Date()): string {
-  const lines: string[] = [
-    "✨ <b>بروزرسانی‌های امروز به استور سیب‌استار اضافه شد</b>",
-    "",
-    "⭐️ <b>لیست برنامه‌های امروز</b>",
-    "",
-  ];
+  const t = getTemplates();
+  const lines: string[] = [t.updatesTitle, "", t.updatesListHeader, ""];
   for (const app of apps.slice(0, 8)) {
     const kind = app.kind === "game" ? "🎮 بازی" : "📱 برنامه";
     const tag = tagFor(app);
@@ -233,7 +230,7 @@ export function updatesCaption(apps: SibApp[], date = new Date()): string {
   }
   lines.push(`📆 ${escHtml(shamsiDayTitle(date))}`);
   lines.push("");
-  lines.push("پشتیبانی · آموزش نصب · اینستاگرام");
+  lines.push(t.updatesFooterNote);
   return lines.join("\n").trim();
 }
 

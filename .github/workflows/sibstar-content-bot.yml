@@ -36,6 +36,14 @@ jobs:
           cache: npm
           cache-dependency-path: content-bot/package-lock.json
 
+      - name: Restore bot state (admins + templates)
+        uses: actions/cache@v4
+        with:
+          path: content-bot/data
+          key: sibstar-bot-state-${{ github.run_id }}
+          restore-keys: |
+            sibstar-bot-state-
+
       - name: Install
         run: npm ci
 

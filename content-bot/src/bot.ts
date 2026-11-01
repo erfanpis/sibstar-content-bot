@@ -1,4 +1,13 @@
 import { Bot, InlineKeyboard, InputFile, Keyboard } from "grammy";
+import {
+  addAdmin,
+  allAdminIds,
+  extraAdminIds,
+  isAdmin,
+  isOwner,
+  ownerIds,
+  removeAdmin,
+} from "./admins.js";
 import { bankUpdateCaption, introCaption, updateReleaseCaption } from "./captions.js";
 import { config } from "./config.js";
 import { buildCover } from "./cover.js";
@@ -6,6 +15,15 @@ import { findBestIntroPhoto, researchApp } from "./introMedia.js";
 import { fingerprint, fetchCatalog, appPageUrl, type SibApp } from "./sibstar.js";
 import { loadState, saveState } from "./state.js";
 import { shamsiDayTitle, shamsiKey } from "./shamsi.js";
+import {
+  TEMPLATE_META,
+  getTemplate,
+  isTemplateKey,
+  resetAllTemplates,
+  resetTemplate,
+  setTemplate,
+  type TemplateKey,
+} from "./templates.js";
 import { appsUpdatedToday, buildUpdatesCard, updatesCaption } from "./updatesCard.js";
 import { publishViaUser, userPosterConfigured } from "./userChannel.js";
 
@@ -21,7 +39,7 @@ type Pending = {
   parseMode?: "HTML";
 };
 
-type AwaitKind = "update_q" | "intro_q" | "watch_add" | "watch_del";
+type AwaitKind = "update_q" | "intro_q" | "watch_add" | "watch_del" | "admin_add" | `tpl_edit:${TemplateKey}`;
 
 const pending = new Map<number, Pending>();
 const awaiting = new Map<number, AwaitKind>();
@@ -32,12 +50,11 @@ const BTN = {
   today: "1️⃣ آپدیت‌های امروز",
   update: "2️⃣ آپدیت تکی",
   intro: "3️⃣ معرفی",
+  settings: "4️⃣ تنظیمات",
   menu: "📋 راهنما",
 } as const;
 
-function isAdmin(userId?: number): boolean {
-  return !!userId && config.adminIds.includes(userId);
-}
+const DENIED = "دسترسی نداری — فقط ادمین‌های سیب‌استار.";
 
 function mainKeyboard() {
   return new Keyboard()
@@ -46,6 +63,8 @@ function mainKeyboard() {
     .text(BTN.update)
     .row()
     .text(BTN.intro)
+    .row()
+    .text(BTN.settings)
     .row()
     .text(BTN.menu)
     .resized()
@@ -59,7 +78,7 @@ function helpText(): string {
     "حالت آزمایشی: هیچ پستی خودکار نمی‌ره — فقط بعد از ✅ خودت.",
     "ارسال روی کانال اصلی است؛ برای مخفی‌بودن ربات در ادمین‌ها Anonymous را روشن کن.",
     "",
-    "سه بخش جدا:",
+    "بخش‌ها:",
     "",
     `${BTN.today}`,
     "→ لیست واقعی آپدیت‌های امروز · تیک بزن · ساخت کلاژ",
@@ -70,18 +89,92 @@ function helpText(): string {
     `${BTN.intro}`,
     "→ اسم بفرست یا تصادفی · کپشن داستانی + عکس خوب",
     "",
+    `${BTN.settings}`,
+    "→ ادمین‌ها · قالب کپشن‌ها",
+    "",
     "بعد از پیش‌نمایش همان زیر پست ✅ / ❌ بزن.",
+    "غیر ادمین هیچ دکمه‌ای کار نمی‌کند.",
   ].join("\n");
 }
 
 async function registerAdminCommands(bot: Bot) {
   await bot.api.setMyCommands([
-    { command: "start", description: "منوی ۳ بخشی" },
+    { command: "start", description: "منوی مدیریت" },
     { command: "today", description: "آپدیت‌های امروز" },
     { command: "update", description: "آپدیت تکی" },
     { command: "intro", description: "معرفی" },
+    { command: "settings", description: "ادمین‌ها و قالب‌ها" },
     { command: "status", description: "وضعیت" },
+    { command: "id", description: "آیدی عددی تلگرام" },
   ]);
+}
+
+function settingsKeyboard(userId: number) {
+  const kb = new InlineKeyboard().text("👥 ادمین‌ها", "set:admins").text("📝 قالب‌ها", "set:tpls").row();
+  if (isOwner(userId)) kb.text("➕ افزودن ادمین", "set:addadmin").row();
+  return kb;
+}
+
+function adminsListText(): string {
+  const owners = ownerIds();
+  const extra = extraAdminIds();
+  const lines = [
+    "👥 ادمین‌های ربات",
+    "",
+    "👑 صاحب (از Secrets — حذف‌نشدنی):",
+    ...owners.map((id) => `· <code>${id}</code>`),
+  ];
+  if (extra.length) {
+    lines.push("", "🛠 ادمین اضافه:");
+    lines.push(...extra.map((id) => `· <code>${id}</code>`));
+  } else {
+    lines.push("", "ادمین اضافه‌ای نیست.");
+  }
+  lines.push("", "فقط صاحب می‌تواند ادمین اضافه/حذف کند.");
+  lines.push("برای گرفتن آیدی: طرف مقابل به ربات /id بفرستد.");
+  return lines.join("\n");
+}
+
+function adminsManageKeyboard() {
+  const kb = new InlineKeyboard();
+  for (const id of extraAdminIds()) {
+    kb.text(`🗑 حذف ${id}`, `adel:${id}`).row();
+  }
+  kb.text("➕ افزودن ادمین", "set:addadmin").row();
+  kb.text("◀️ بازگشت", "set:home");
+  return kb;
+}
+
+function templatesListKeyboard() {
+  const kb = new InlineKeyboard();
+  for (const m of TEMPLATE_META) {
+    kb.text(m.title, `tpl:${m.key}`).row();
+  }
+  kb.text("♻️ بازگردانی همه به پیش‌فرض", "tplreset:all").row();
+  kb.text("◀️ بازگشت", "set:home");
+  return kb;
+}
+
+function templateDetailKeyboard(key: TemplateKey) {
+  return new InlineKeyboard()
+    .text("✏️ ویرایش", `tpledit:${key}`)
+    .text("♻️ پیش‌فرض", `tplreset:${key}`)
+    .row()
+    .text("◀️ لیست قالب‌ها", "set:tpls");
+}
+
+function openSettings(ctx: { reply: (t: string, extra?: object) => Promise<unknown>; from?: { id: number } }) {
+  return ctx.reply(
+    [
+      "⚙️ تنظیمات",
+      "",
+      `ادمین‌ها: ${allAdminIds().length} نفر`,
+      `نقش تو: ${isOwner(ctx.from?.id) ? "صاحب" : "ادمین"}`,
+      "",
+      "یکی را انتخاب کن:",
+    ].join("\n"),
+    { reply_markup: settingsKeyboard(ctx.from!.id) },
+  );
 }
 
 async function makePending(app: SibApp, mode: "intro" | "update" | "bank"): Promise<Pending> {
@@ -394,37 +487,42 @@ export function createBot() {
   const withMenu = { reply_markup: mainKeyboard() };
 
   bot.command("start", async (ctx) => {
-    if (!isAdmin(ctx.from?.id)) return ctx.reply("خصوصی ادمین سیب‌استار.");
+    if (!isAdmin(ctx.from?.id)) return ctx.reply(DENIED);
     awaiting.delete(ctx.from!.id);
     await ctx.reply(helpText(), withMenu);
   });
   bot.command("menu", async (ctx) => {
-    if (!isAdmin(ctx.from?.id)) return;
+    if (!isAdmin(ctx.from?.id)) return ctx.reply(DENIED);
     awaiting.delete(ctx.from!.id);
     await ctx.reply(helpText(), withMenu);
   });
   bot.command("help", async (ctx) => {
-    if (!isAdmin(ctx.from?.id)) return;
+    if (!isAdmin(ctx.from?.id)) return ctx.reply(DENIED);
     await ctx.reply(helpText(), withMenu);
   });
   bot.command("today", async (ctx) => {
-    if (!isAdmin(ctx.from?.id)) return;
+    if (!isAdmin(ctx.from?.id)) return ctx.reply(DENIED);
     awaiting.delete(ctx.from!.id);
     await openTodayPicker(ctx);
   });
   bot.command("update", async (ctx) => {
-    if (!isAdmin(ctx.from?.id)) return;
+    if (!isAdmin(ctx.from?.id)) return ctx.reply(DENIED);
     const arg = (ctx.match || "").toString().trim();
     await doModeSearch(ctx, arg, "update");
   });
   bot.command("intro", async (ctx) => {
-    if (!isAdmin(ctx.from?.id)) return;
+    if (!isAdmin(ctx.from?.id)) return ctx.reply(DENIED);
     const arg = (ctx.match || "").toString().trim();
     if (arg) await doModeSearch(ctx, arg, "intro");
     else await openIntroMenu(ctx);
   });
+  bot.command("settings", async (ctx) => {
+    if (!isAdmin(ctx.from?.id)) return ctx.reply(DENIED);
+    awaiting.delete(ctx.from!.id);
+    await openSettings(ctx);
+  });
   bot.command("status", async (ctx) => {
-    if (!isAdmin(ctx.from?.id)) return;
+    if (!isAdmin(ctx.from?.id)) return ctx.reply(DENIED);
     const st = loadState();
     const apps = await fetchCatalog();
     const today = appsUpdatedToday(apps);
@@ -434,18 +532,19 @@ export function createBot() {
         `آپدیت امروز (${shamsiDayTitle()}): ${today.length}`,
         `نوبت معرفی: ${st.nextKind === "game" ? "بازی" : "برنامه"}`,
         `آخرین پست: ${st.lastDailyAt || "—"}`,
+        `ادمین‌ها: ${allAdminIds().length}`,
       ].join("\n"),
       withMenu,
     );
   });
   bot.command("publish", async (ctx) => {
-    if (!isAdmin(ctx.from?.id)) return;
+    if (!isAdmin(ctx.from?.id)) return ctx.reply(DENIED);
     const p = pending.get(ctx.from!.id);
     if (!p) return ctx.reply("پیش‌نمایش نداری.", withMenu);
     await publishPending(ctx.api, (t) => ctx.reply(t, withMenu), p, ctx.from!.id);
   });
   bot.command("cancel", async (ctx) => {
-    if (!isAdmin(ctx.from?.id)) return;
+    if (!isAdmin(ctx.from?.id)) return ctx.reply(DENIED);
     pending.delete(ctx.from!.id);
     awaiting.delete(ctx.from!.id);
     todayDraft.delete(ctx.from!.id);
@@ -453,12 +552,8 @@ export function createBot() {
   });
   bot.command("id", async (ctx) => {
     if (!ctx.from) return;
-    await ctx.reply(
-      isAdmin(ctx.from.id)
-        ? `آیدی: <code>${ctx.from.id}</code> ✅ ادمین`
-        : `آیدی: <code>${ctx.from.id}</code> ❌`,
-      { parse_mode: "HTML" },
-    );
+    const role = isOwner(ctx.from.id) ? "صاحب ✅" : isAdmin(ctx.from.id) ? "ادمین ✅" : "بدون دسترسی ❌";
+    await ctx.reply(`آیدی: <code>${ctx.from.id}</code>\nنقش: ${role}`, { parse_mode: "HTML" });
   });
 
   bot.callbackQuery("publish", async (ctx) => {
@@ -470,7 +565,7 @@ export function createBot() {
   });
 
   bot.callbackQuery("cancel", async (ctx) => {
-    if (!isAdmin(ctx.from?.id)) return;
+    if (!isAdmin(ctx.from?.id)) return ctx.answerCallbackQuery({ text: "نه", show_alert: true });
     pending.delete(ctx.from.id);
     awaiting.delete(ctx.from.id);
     todayDraft.delete(ctx.from.id);
@@ -478,8 +573,149 @@ export function createBot() {
     await ctx.reply("لغو شد.", withMenu);
   });
 
+  bot.callbackQuery("set:home", async (ctx) => {
+    if (!isAdmin(ctx.from?.id)) return ctx.answerCallbackQuery({ text: "نه", show_alert: true });
+    awaiting.delete(ctx.from.id);
+    await ctx.answerCallbackQuery();
+    try {
+      await ctx.editMessageText(
+        [
+          "⚙️ تنظیمات",
+          "",
+          `ادمین‌ها: ${allAdminIds().length} نفر`,
+          `نقش تو: ${isOwner(ctx.from.id) ? "صاحب" : "ادمین"}`,
+          "",
+          "یکی را انتخاب کن:",
+        ].join("\n"),
+        { reply_markup: settingsKeyboard(ctx.from.id) },
+      );
+    } catch {
+      await openSettings(ctx);
+    }
+  });
+
+  bot.callbackQuery("set:admins", async (ctx) => {
+    if (!isAdmin(ctx.from?.id)) return ctx.answerCallbackQuery({ text: "نه", show_alert: true });
+    await ctx.answerCallbackQuery();
+    const kb = isOwner(ctx.from.id)
+      ? adminsManageKeyboard()
+      : new InlineKeyboard().text("◀️ بازگشت", "set:home");
+    try {
+      await ctx.editMessageText(adminsListText(), { parse_mode: "HTML", reply_markup: kb });
+    } catch {
+      await ctx.reply(adminsListText(), { parse_mode: "HTML", reply_markup: kb });
+    }
+  });
+
+  bot.callbackQuery("set:addadmin", async (ctx) => {
+    if (!isOwner(ctx.from?.id)) return ctx.answerCallbackQuery({ text: "فقط صاحب", show_alert: true });
+    awaiting.set(ctx.from.id, "admin_add");
+    await ctx.answerCallbackQuery();
+    await ctx.reply(
+      "آیدی عددی تلگرام ادمین جدید را بفرست.\n(طرف مقابل /id بزند و عدد را کپی کند)\nبرای لغو: /cancel",
+      withMenu,
+    );
+  });
+
+  bot.callbackQuery(/^adel:(\d+)$/, async (ctx) => {
+    if (!isOwner(ctx.from?.id)) return ctx.answerCallbackQuery({ text: "فقط صاحب", show_alert: true });
+    const id = Number(ctx.match![1]);
+    const r = removeAdmin(id);
+    if (!r.ok) return ctx.answerCallbackQuery({ text: r.reason, show_alert: true });
+    await ctx.answerCallbackQuery({ text: "حذف شد" });
+    try {
+      await ctx.editMessageText(adminsListText(), {
+        parse_mode: "HTML",
+        reply_markup: adminsManageKeyboard(),
+      });
+    } catch {
+      await ctx.reply(adminsListText(), { parse_mode: "HTML", reply_markup: adminsManageKeyboard() });
+    }
+  });
+
+  bot.callbackQuery("set:tpls", async (ctx) => {
+    if (!isAdmin(ctx.from?.id)) return ctx.answerCallbackQuery({ text: "نه", show_alert: true });
+    awaiting.delete(ctx.from.id);
+    await ctx.answerCallbackQuery();
+    const text = "📝 قالب کپشن‌ها\nیکی را برای دیدن/ویرایش انتخاب کن:";
+    try {
+      await ctx.editMessageText(text, { reply_markup: templatesListKeyboard() });
+    } catch {
+      await ctx.reply(text, { reply_markup: templatesListKeyboard() });
+    }
+  });
+
+  bot.callbackQuery(/^tpl:([a-zA-Z0-9_]+)$/, async (ctx) => {
+    if (!isAdmin(ctx.from?.id)) return ctx.answerCallbackQuery({ text: "نه", show_alert: true });
+    const key = ctx.match![1]!;
+    if (!isTemplateKey(key)) return ctx.answerCallbackQuery({ text: "نامعتبر", show_alert: true });
+    const meta = TEMPLATE_META.find((m) => m.key === key)!;
+    const cur = getTemplate(key);
+    await ctx.answerCallbackQuery();
+    const body = [
+      `📝 ${meta.title}`,
+      `کلید: <code>${key}</code>`,
+      meta.hint,
+      "",
+      "متن فعلی:",
+      `<code>${escHtml(cur).slice(0, 3500)}</code>`,
+    ].join("\n");
+    try {
+      await ctx.editMessageText(body, { parse_mode: "HTML", reply_markup: templateDetailKeyboard(key) });
+    } catch {
+      await ctx.reply(body, { parse_mode: "HTML", reply_markup: templateDetailKeyboard(key) });
+    }
+  });
+
+  bot.callbackQuery(/^tpledit:([a-zA-Z0-9_]+)$/, async (ctx) => {
+    if (!isAdmin(ctx.from?.id)) return ctx.answerCallbackQuery({ text: "نه", show_alert: true });
+    const key = ctx.match![1]!;
+    if (!isTemplateKey(key)) return ctx.answerCallbackQuery({ text: "نامعتبر", show_alert: true });
+    awaiting.set(ctx.from.id, `tpl_edit:${key}`);
+    await ctx.answerCallbackQuery({ text: "متن جدید بفرست" });
+    await ctx.reply(
+      `متن جدید برای «${TEMPLATE_META.find((m) => m.key === key)!.title}» را بفرست.\n${TEMPLATE_META.find((m) => m.key === key)!.hint}\nلغو: /cancel`,
+      withMenu,
+    );
+  });
+
+  bot.callbackQuery(/^tplreset:(all|[a-zA-Z0-9_]+)$/, async (ctx) => {
+    if (!isAdmin(ctx.from?.id)) return ctx.answerCallbackQuery({ text: "نه", show_alert: true });
+    const which = ctx.match![1]!;
+    if (which === "all") {
+      resetAllTemplates();
+      await ctx.answerCallbackQuery({ text: "همه پیش‌فرض شد" });
+      try {
+        await ctx.editMessageText("📝 قالب‌ها به پیش‌فرض برگشت.\nیکی را انتخاب کن:", {
+          reply_markup: templatesListKeyboard(),
+        });
+      } catch {
+        await ctx.reply("قالب‌ها پیش‌فرض شدند.", { reply_markup: templatesListKeyboard() });
+      }
+      return;
+    }
+    if (!isTemplateKey(which)) return ctx.answerCallbackQuery({ text: "نامعتبر", show_alert: true });
+    resetTemplate(which);
+    await ctx.answerCallbackQuery({ text: "پیش‌فرض شد" });
+    const meta = TEMPLATE_META.find((m) => m.key === which)!;
+    const cur = getTemplate(which);
+    const body = [
+      `📝 ${meta.title}`,
+      `کلید: <code>${which}</code>`,
+      meta.hint,
+      "",
+      "متن فعلی (پیش‌فرض):",
+      `<code>${escHtml(cur).slice(0, 3500)}</code>`,
+    ].join("\n");
+    try {
+      await ctx.editMessageText(body, { parse_mode: "HTML", reply_markup: templateDetailKeyboard(which) });
+    } catch {
+      await ctx.reply(body, { parse_mode: "HTML", reply_markup: templateDetailKeyboard(which) });
+    }
+  });
+
   bot.callbackQuery(/^tog:(.+)$/, async (ctx) => {
-    if (!isAdmin(ctx.from?.id)) return;
+    if (!isAdmin(ctx.from?.id)) return ctx.answerCallbackQuery({ text: "نه", show_alert: true });
     const slug = ctx.match![1]!;
     const draft = todayDraft.get(ctx.from.id);
     if (!draft) return ctx.answerCallbackQuery({ text: "منقضی — دوباره آپدیت‌های امروز را بزن", show_alert: true });
@@ -497,7 +733,7 @@ export function createBot() {
   });
 
   bot.callbackQuery("today:top8", async (ctx) => {
-    if (!isAdmin(ctx.from?.id)) return;
+    if (!isAdmin(ctx.from?.id)) return ctx.answerCallbackQuery({ text: "نه", show_alert: true });
     const draft = todayDraft.get(ctx.from.id);
     if (!draft) return ctx.answerCallbackQuery({ text: "منقضی", show_alert: true });
     draft.selected = new Set(draft.list.slice(0, 8).map((a) => a.slug));
@@ -510,7 +746,7 @@ export function createBot() {
   });
 
   bot.callbackQuery("today:clear", async (ctx) => {
-    if (!isAdmin(ctx.from?.id)) return;
+    if (!isAdmin(ctx.from?.id)) return ctx.answerCallbackQuery({ text: "نه", show_alert: true });
     const draft = todayDraft.get(ctx.from.id);
     if (!draft) return ctx.answerCallbackQuery({ text: "منقضی", show_alert: true });
     draft.selected.clear();
@@ -527,7 +763,7 @@ export function createBot() {
   });
 
   bot.callbackQuery("today:build", async (ctx) => {
-    if (!isAdmin(ctx.from?.id)) return;
+    if (!isAdmin(ctx.from?.id)) return ctx.answerCallbackQuery({ text: "نه", show_alert: true });
     const draft = todayDraft.get(ctx.from.id);
     if (!draft) return ctx.answerCallbackQuery({ text: "منقضی", show_alert: true });
     const picked = draft.list.filter((a) => draft.selected.has(a.slug)).slice(0, 8);
@@ -542,7 +778,7 @@ export function createBot() {
   });
 
   bot.callbackQuery("intro:rand", async (ctx) => {
-    if (!isAdmin(ctx.from?.id)) return;
+    if (!isAdmin(ctx.from?.id)) return ctx.answerCallbackQuery({ text: "نه", show_alert: true });
     await ctx.answerCallbackQuery({ text: "تصادفی…" });
     await ctx.reply("⏳ ساخت معرفی تصادفی…", withMenu);
     try {
@@ -571,13 +807,18 @@ export function createBot() {
   });
 
   bot.on("message:text", async (ctx) => {
-    if (!isAdmin(ctx.from?.id)) return;
+    if (!isAdmin(ctx.from?.id)) return void (await ctx.reply(DENIED));
     const text = ctx.message.text.trim();
     if (text.startsWith("/")) return;
 
     if (text === BTN.menu) {
       awaiting.delete(ctx.from.id);
       await ctx.reply(helpText(), withMenu);
+      return;
+    }
+    if (text === BTN.settings) {
+      awaiting.delete(ctx.from.id);
+      await openSettings(ctx);
       return;
     }
     if (text === BTN.today) {
@@ -595,6 +836,27 @@ export function createBot() {
       return;
     }
     const wait = awaiting.get(ctx.from.id);
+    if (wait === "admin_add") {
+      awaiting.delete(ctx.from.id);
+      if (!isOwner(ctx.from.id)) return void (await ctx.reply("فقط صاحب می‌تواند ادمین اضافه کند.", withMenu));
+      const id = Number(text.replace(/[^\d]/g, ""));
+      const r = addAdmin(id);
+      if (!r.ok) return void (await ctx.reply(r.reason, withMenu));
+      await ctx.reply(
+        r.already ? `همین الان ادمین بود: <code>${id}</code>` : `✅ ادمین شد: <code>${id}</code>`,
+        { parse_mode: "HTML", ...withMenu },
+      );
+      return;
+    }
+    if (wait?.startsWith("tpl_edit:")) {
+      awaiting.delete(ctx.from.id);
+      const key = wait.slice("tpl_edit:".length);
+      if (!isTemplateKey(key)) return void (await ctx.reply("کلید نامعتبر.", withMenu));
+      if (!text.trim()) return void (await ctx.reply("متن خالی قبول نیست.", withMenu));
+      setTemplate(key, text);
+      await ctx.reply(`✅ قالب «${TEMPLATE_META.find((m) => m.key === key)!.title}» ذخیره شد.`, withMenu);
+      return;
+    }
     if (wait === "update_q") {
       awaiting.delete(ctx.from.id);
       await doModeSearch(ctx, text, "update");

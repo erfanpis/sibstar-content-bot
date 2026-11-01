@@ -1,5 +1,6 @@
 import { config } from "./config.js";
 import type { SibApp } from "./sibstar.js";
+import { fillTemplate, getTemplates } from "./templates.js";
 
 function esc(s: string): string {
   return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
@@ -144,13 +145,12 @@ function bodyFor(app: SibApp, snippets: { title: string; description: string }[]
 }
 
 function recommendLine(app: SibApp): string {
-  if (app.kind === "game") {
-    return `👑 بشدت پیشنهادش می‌کنم؛ خودم و دوستام روش وقت می‌ذاریم — دانلود نسخه کامل:`;
-  }
+  const t = getTemplates();
+  if (app.kind === "game") return t.introRecommendGame;
   if (/خواب|sleep|آلارم|alarm|calm|آرامش/.test(`${app.description} ${app.name} ${app.nameFa}`.toLowerCase())) {
-    return `👑 بشدت پیشنهادش می‌کنم؛ دوستان خودم استفاده می‌کنن ازش، دانلود نسخه پریمیوم:`;
+    return t.introRecommendSleep;
   }
-  return `👑 بشدت پیشنهادش می‌کنم؛ دوستان خودم استفاده می‌کنن ازش، دانلود نسخه پریمیوم:`;
+  return t.introRecommendDefault;
 }
 
 /** کپشن معرفی روزانه — استایل داستانی کانال (مثل نمونه Sleep Cycle) + یافته‌های سرچ وب */
@@ -192,13 +192,14 @@ export function updateReleaseCaption(app: SibApp, link: string): string {
   const kind = app.kind === "game" ? "بازی" : "برنامه";
   const name = esc(app.nameFa || app.name);
   const version = esc(app.version || "—");
+  const t = getTemplates();
   return [
-    `✨ <b>آپدیت جدید ${kind} منتشر شد!</b>`,
+    fillTemplate(t.updateTitle, { kind }),
     "",
     `📱 ${kind}: <a href="${esc(link)}"><b>${name}</b></a>`,
     `🗂 نسخه: <code>${version}</code>`,
     "",
-    "🟢 جدیدترین نسخه برنامه به سایت اضافه شد و هم‌اکنون آماده دریافت است.",
+    t.updateBody,
     "",
     "📥 دریافت آخرین نسخه:",
     `🔗 <a href="${esc(link)}">لینک دانلود</a>`,
@@ -210,13 +211,14 @@ export function updateReleaseCaption(app: SibApp, link: string): string {
 export async function bankUpdateCaption(app: SibApp, link: string, _useAi: boolean): Promise<string> {
   const name = esc(app.nameFa || app.name);
   const version = esc(app.version || "—");
+  const t = getTemplates();
   return [
-    "✨ <b>آپدیت جدید بانکی منتشر شد!</b>",
+    t.bankTitle,
     "",
     `📱 برنامه: <a href="${esc(link)}"><b>${name}</b></a>`,
     `🗂 نسخه: <code>${version}</code>`,
     "",
-    "🟢 جدیدترین نسخه برنامه به سایت اضافه شد و هم‌اکنون آماده دریافت است.",
+    t.bankBody,
     "",
     "📥 دریافت آخرین نسخه:",
     `🔗 <a href="${esc(link)}">لینک دانلود</a>`,
