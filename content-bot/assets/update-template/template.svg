@@ -1,0 +1,120 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="1536" height="1024" viewBox="0 0 1536 1024">
+<defs>
+  <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+    <stop offset="0" stop-color="{{BG_0}}"/><stop offset=".46" stop-color="{{BG_1}}"/><stop offset="1" stop-color="{{BG_2}}"/>
+  </linearGradient>
+  <radialGradient id="blueGlow" cx=".08" cy=".18" r=".78">
+    <stop offset="0" stop-color="{{GLOW_A}}" stop-opacity=".76"/><stop offset=".44" stop-color="{{GLOW_A_MID}}" stop-opacity=".22"/><stop offset="1" stop-color="{{GLOW_A_DEEP}}" stop-opacity="0"/>
+  </radialGradient>
+  <radialGradient id="violetGlow" cx=".9" cy=".82" r=".72">
+    <stop offset="0" stop-color="{{GLOW_B}}" stop-opacity=".56"/><stop offset=".48" stop-color="{{GLOW_B_MID}}" stop-opacity=".17"/><stop offset="1" stop-color="{{GLOW_B_DEEP}}" stop-opacity="0"/>
+  </radialGradient>
+  <linearGradient id="glass" x1="0" y1="0" x2="1" y2="1">
+    <stop offset="0" stop-color="{{GLASS_0}}" stop-opacity=".19"/><stop offset=".45" stop-color="{{GLASS_1}}" stop-opacity=".09"/><stop offset="1" stop-color="{{GLASS_2}}" stop-opacity=".13"/>
+  </linearGradient>
+  <linearGradient id="rim" x1="0" y1="0" x2="1" y2="1">
+    <stop offset="0" stop-color="{{RIM_0}}" stop-opacity=".95"/><stop offset=".28" stop-color="{{RIM_1}}" stop-opacity=".85"/><stop offset=".66" stop-color="{{RIM_2}}" stop-opacity=".92"/><stop offset="1" stop-color="{{RIM_3}}" stop-opacity=".9"/>
+  </linearGradient>
+  <linearGradient id="updateFill" x1="0" y1="0" x2="1" y2="1">
+    <stop offset="0" stop-color="{{UPDATE_0}}" stop-opacity=".56"/><stop offset=".56" stop-color="{{UPDATE_1}}" stop-opacity=".40"/><stop offset="1" stop-color="{{UPDATE_2}}" stop-opacity=".42"/>
+  </linearGradient>
+  <linearGradient id="pillFill" x1="0" y1="0" x2="1" y2="0">
+    <stop offset="0" stop-color="{{PILL_0}}" stop-opacity=".38"/><stop offset="1" stop-color="{{PILL_1}}" stop-opacity=".33"/>
+  </linearGradient>
+  <linearGradient id="iconBg" x1="0" y1="0" x2="1" y2="1">
+    <stop offset="0" stop-color="{{ICONBG_0}}" stop-opacity=".24"/><stop offset=".55" stop-color="{{ICONBG_1}}" stop-opacity=".22"/><stop offset="1" stop-color="{{ICONBG_2}}" stop-opacity=".20"/>
+  </linearGradient>
+  <linearGradient id="ribbon" x1="0" y1="0" x2="1" y2="1">
+    <stop offset="0" stop-color="{{RIBBON_0}}" stop-opacity=".0"/><stop offset=".36" stop-color="{{RIBBON_1}}" stop-opacity=".27"/><stop offset=".72" stop-color="{{RIBBON_2}}" stop-opacity=".18"/><stop offset="1" stop-color="{{RIBBON_3}}" stop-opacity=".02"/>
+  </linearGradient>
+  <filter id="blur30" x="-40%" y="-40%" width="180%" height="180%"><feGaussianBlur stdDeviation="30"/></filter>
+  <filter id="blur12" x="-40%" y="-40%" width="180%" height="180%"><feGaussianBlur stdDeviation="12"/></filter>
+  <filter id="shadow" x="-30%" y="-30%" width="160%" height="170%"><feGaussianBlur in="SourceAlpha" stdDeviation="18" result="b"/><feOffset dy="16" result="o"/><feColorMatrix in="o" type="matrix" values="0 0 0 0 0.00 0 0 0 0 0.02 0 0 0 0 0.12 0 0 0 .60 0" result="s"/><feMerge><feMergeNode in="s"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+  <clipPath id="appIconClip"><rect x="166" y="385" width="382" height="382" rx="88" ry="88"/></clipPath>
+  <clipPath id="mainCardClip"><rect x="78" y="270" width="1380" height="650" rx="54" ry="54"/></clipPath>
+</defs>
+
+<!-- Background: adaptive to icon palette -->
+<rect width="1536" height="1024" fill="url(#bg)"/>
+<rect width="1536" height="1024" fill="url(#blueGlow)"/>
+<rect width="1536" height="1024" fill="url(#violetGlow)"/>
+<circle cx="90" cy="170" r="260" fill="{{ORB_A}}" opacity=".22" filter="url(#blur30)"/>
+<circle cx="1420" cy="800" r="250" fill="{{ORB_B}}" opacity=".20" filter="url(#blur30)"/>
+<circle cx="1190" cy="140" r="165" fill="{{ORB_C}}" opacity=".08" filter="url(#blur30)"/>
+<!-- Fine orbital arcs -->
+<path d="M-150 340 C 170 30 470 30 710 170 S 1160 310 1690 -40" fill="none" stroke="{{ARC_A}}" stroke-opacity=".16" stroke-width="2"/>
+<path d="M-130 405 C 170 110 465 95 730 225 S 1190 380 1665 30" fill="none" stroke="{{ARC_B}}" stroke-opacity=".11" stroke-width="1.5"/>
+<path d="M-160 910 C 210 700 440 780 740 910 S 1270 1080 1690 760" fill="none" stroke="{{ARC_C}}" stroke-opacity=".20" stroke-width="2"/>
+<!-- Glass ribbons -->
+<path d="M-90 220 C 160 100 210 -5 420 -85 C 270 145 170 255 -80 380 Z" fill="url(#ribbon)" stroke="{{RIBBON_STROKE_A}}" stroke-opacity=".25" stroke-width="2"/>
+<path d="M1110 -80 C 1320 100 1370 250 1600 335 L1600 110 C 1400 110 1310 -20 1240 -100 Z" fill="url(#ribbon)" stroke="{{RIBBON_STROKE_B}}" stroke-opacity=".16" stroke-width="2"/>
+<path d="M1000 1040 C 1250 850 1410 860 1580 700 L1590 1040 Z" fill="url(#ribbon)" opacity=".55"/>
+<!-- Subtle luminous dots -->
+<circle cx="1280" cy="248" r="3" fill="{{DOT_A}}" opacity=".7"/><circle cx="1320" cy="248" r="2" fill="{{DOT_B}}" opacity=".8"/><circle cx="1360" cy="248" r="2" fill="{{DOT_A}}" opacity=".55"/>
+
+<!-- Brand header -->
+<g>
+  <image x="104" y="55" width="124" height="148" preserveAspectRatio="xMidYMid meet" href="{{LOGO_DATA_URI}}" xlink:href="{{LOGO_DATA_URI}}"/>
+  <path d="M260 73 V195" stroke="{{BRAND_LINE}}" stroke-opacity=".42" stroke-width="2"/>
+  <text x="700" y="133" text-anchor="start" direction="rtl" unicode-bidi="plaintext" font-family="Noto Sans Arabic, Vazirmatn, sans-serif" font-size="68" font-weight="700" fill="#f6fbff">سیب‌استار</text>
+  <text x="315" y="181" text-anchor="start" font-family="Inter, sans-serif" font-size="27" font-weight="500" letter-spacing="12" fill="{{BRAND_SUB}}">SIBSTAR</text>
+  <text x="1410" y="119" text-anchor="start" direction="rtl" unicode-bidi="plaintext" font-family="Noto Sans Arabic, Vazirmatn, sans-serif" font-size="27" font-weight="500" fill="{{BRAND_SUB}}" fill-opacity=".94">دنیای اپلیکیشن‌ها و بازی‌های iOS</text>
+  <text x="1410" y="160" text-anchor="start" direction="rtl" unicode-bidi="plaintext" font-family="Noto Sans Arabic, Vazirmatn, sans-serif" font-size="22" fill="{{BRAND_MUTED}}" fill-opacity=".88">در دسترس شما</text>
+  <path d="M1040 188 H1410" stroke="{{BRAND_RULE}}" stroke-opacity=".26" stroke-width="1.5"/>
+</g>
+
+<!-- Main frosted glass stage -->
+<g filter="url(#shadow)">
+  <rect x="78" y="270" width="1380" height="650" rx="54" fill="{{STAGE_FILL}}" fill-opacity=".34" stroke="url(#rim)" stroke-opacity=".55" stroke-width="2"/>
+  <rect x="84" y="276" width="1368" height="638" rx="49" fill="url(#glass)" stroke="{{STAGE_STROKE}}" stroke-opacity=".12" stroke-width="1"/>
+  <path d="M115 310 C 360 260 470 295 635 385" stroke="{{STAGE_ARC_A}}" stroke-opacity=".10" stroke-width="2" fill="none"/>
+  <path d="M930 910 C 1160 840 1330 860 1435 790" stroke="{{STAGE_ARC_B}}" stroke-opacity=".10" stroke-width="2" fill="none"/>
+</g>
+
+<!-- App icon pedestal / replaceable icon slot -->
+<g>
+  <rect x="116" y="330" width="482" height="500" rx="58" fill="{{PEDESTAL_FILL}}" fill-opacity=".28" stroke="url(#rim)" stroke-opacity=".78" stroke-width="3" filter="url(#shadow)"/>
+  <rect x="127" y="341" width="460" height="478" rx="50" fill="url(#iconBg)" stroke="{{PEDESTAL_STROKE}}" stroke-opacity=".28" stroke-width="1.5"/>
+  <rect x="152" y="371" width="410" height="410" rx="100" fill="{{ICON_WELL}}" fill-opacity=".34" stroke="{{ICON_WELL_STROKE}}" stroke-opacity=".2" stroke-width="1.5"/>
+  <!-- The app's real icon is injected here by render.mjs -->
+  {{APP_ICON_ELEMENT}}
+  <rect x="152" y="371" width="410" height="410" rx="100" fill="none" stroke="{{ICON_RIM}}" stroke-opacity=".54" stroke-width="2"/>
+  <path d="M170 405 C 265 360 445 360 532 408" stroke="{{ICON_SHINE}}" stroke-opacity=".16" stroke-width="3" fill="none"/>
+  <ellipse cx="357" cy="840" rx="240" ry="22" fill="{{PEDESTAL_GLOW}}" opacity=".22" filter="url(#blur12)"/>
+</g>
+
+<!-- Update announcement -->
+<g filter="url(#shadow)">
+  <rect x="646" y="326" width="766" height="174" rx="48" fill="url(#updateFill)" stroke="url(#rim)" stroke-width="2.5"/>
+  <rect x="658" y="338" width="742" height="150" rx="40" fill="{{UPDATE_INNER}}" fill-opacity=".20" stroke="{{UPDATE_INNER_STROKE}}" stroke-opacity=".16"/>
+  <circle cx="733" cy="413" r="48" fill="{{UPDATE_DISC}}" fill-opacity=".30" stroke="{{UPDATE_DISC_STROKE}}" stroke-opacity=".48" stroke-width="2"/>
+  <path d="M710 411 A24 24 0 0 1 751 393" fill="none" stroke="#f2fbff" stroke-width="6" stroke-linecap="round"/>
+  <path d="M748 382 L752 397 L736 395" fill="none" stroke="#f2fbff" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M756 417 A24 24 0 0 1 715 434" fill="none" stroke="#f2fbff" stroke-width="6" stroke-linecap="round"/>
+  <path d="M718 445 L714 430 L730 432" fill="none" stroke="#f2fbff" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+  <text x="1350" y="406" text-anchor="start" direction="rtl" unicode-bidi="plaintext" font-family="Noto Sans Arabic, Vazirmatn, sans-serif" font-size="61" font-weight="700" fill="#ffffff">به‌روزرسانی شد!</text>
+  <text x="1350" y="456" text-anchor="end" font-family="Inter, sans-serif" font-size="23" font-weight="600" letter-spacing="8" fill="{{UPDATE_SUB}}">UPDATE RELEASED</text>
+</g>
+
+<!-- App metadata card -->
+<g>
+  <rect x="646" y="535" width="766" height="292" rx="42" fill="{{META_FILL}}" fill-opacity=".45" stroke="{{META_STROKE}}" stroke-opacity=".52" stroke-width="2"/>
+  <rect x="658" y="547" width="742" height="268" rx="34" fill="url(#glass)" stroke="{{META_INNER_STROKE}}" stroke-opacity=".12" stroke-width="1"/>
+  <text id="appName" x="1350" y="638" text-anchor="{{APP_NAME_ANCHOR}}" direction="{{APP_NAME_DIRECTION}}" unicode-bidi="plaintext" font-family="Noto Sans Arabic, Vazirmatn, sans-serif" font-size="{{APP_NAME_SIZE}}" font-weight="700" fill="#ffffff">{{APP_NAME}}</text>
+  <text x="1350" y="681" text-anchor="end" font-family="Inter, sans-serif" font-size="22" letter-spacing="3" fill="{{META_SUB}}">{{APP_NAME_EN}}</text>
+  <path d="M700 704 H1360" stroke="{{META_RULE}}" stroke-opacity=".32" stroke-width="1.5"/>
+  <!-- Version label and version badge -->
+  <text x="1350" y="772" text-anchor="start" direction="rtl" unicode-bidi="plaintext" font-family="Noto Sans Arabic, Vazirmatn, sans-serif" font-size="31" font-weight="600" fill="{{META_LABEL}}">نسخه جدید:</text>
+  <rect x="950" y="724" width="210" height="74" rx="26" fill="url(#pillFill)" stroke="url(#rim)" stroke-opacity=".75" stroke-width="2"/>
+  <text x="1055" y="773" text-anchor="middle" font-family="Inter, sans-serif" font-size="37" font-weight="700" fill="#ffffff">v{{VERSION}}</text>
+  <!-- Product type and platform chips -->
+  <rect x="730" y="724" width="190" height="74" rx="25" fill="{{CHIP_FILL}}" fill-opacity=".38" stroke="{{CHIP_STROKE}}" stroke-opacity=".38" stroke-width="1.5"/>
+  <text x="825" y="770" text-anchor="middle" direction="rtl" unicode-bidi="plaintext" font-family="Noto Sans Arabic, Vazirmatn, sans-serif" font-size="27" font-weight="600" fill="#e9f6ff">{{TYPE_LABEL}}</text>
+  <rect x="650" y="724" width="68" height="74" rx="24" fill="{{IOS_FILL}}" fill-opacity=".48" stroke="{{IOS_STROKE}}" stroke-opacity=".35" stroke-width="1.5"/>
+  <text x="684" y="770" text-anchor="middle" font-family="Inter, sans-serif" font-size="25" font-weight="600" fill="#effaff">iOS</text>
+</g>
+
+<!-- Quiet footer, deliberately minimal -->
+<path d="M110 958 H1426" stroke="{{FOOTER_RULE}}" stroke-opacity=".20" stroke-width="1.5"/>
+<text x="768" y="991" text-anchor="middle" font-family="Inter, sans-serif" font-size="15" letter-spacing="8" fill="{{FOOTER_TEXT}}" fill-opacity=".68">SIBSTAR  •  APPS &amp; GAMES</text>
+</svg>

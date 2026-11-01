@@ -1,0 +1,86 @@
+# سیب‌استار کانال‌بات — مثل لینک‌یار ۲۴ساعته:
+# - long-polling فوری
+# - هر جاب ~۵ ساعت
+# - آخر کار با RESPAWN_PAT جاب بعدی را روشن می‌کند
+name: SibStar content bot
+
+on:
+  schedule:
+    - cron: "5 * * * *"
+    - cron: "35 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: write
+
+concurrency:
+  group: sibstar-content-bot
+  cancel-in-progress: false
+
+jobs:
+  poll:
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
+    defaults:
+      run:
+        working-directory: content-bot
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: content-bot/package-lock.json
+
+      - name: Install
+        run: npm ci
+
+      - name: Run content bot (~5 hours)
+        env:
+          # جدا از توکن لینک‌یار — توکن @autosibstarbot
+          TELEGRAM_BOT_TOKEN: ${{ secrets.SIBSTAR_BOT_TOKEN }}
+          TELEGRAM_CHANNEL_ID: ${{ secrets.SIBSTAR_CHANNEL_ID }}
+          ADMIN_USER_IDS: ${{ secrets.SIBSTAR_ADMIN_USER_IDS }}
+          SIBSTAR_BASE_URL: ${{ vars.SIBSTAR_BASE_URL }}
+          SIBSTAR_CHANNEL_URL: ${{ vars.SIBSTAR_CHANNEL_URL }}
+          SIBSTAR_SUPPORT_URL: ${{ vars.SIBSTAR_SUPPORT_URL }}
+          SIBSTAR_GROUP_URL: ${{ vars.SIBSTAR_GROUP_URL }}
+          SIBSTAR_INSTALL_URL: ${{ vars.SIBSTAR_INSTALL_URL }}
+          SIBSTAR_INSTAGRAM_URL: ${{ vars.SIBSTAR_INSTAGRAM_URL }}
+          # آزمایشی: بدون پست خودکار تا ✅ ادمین
+          DAILY_EVERY_HOURS: "0"
+          BANK_EVERY_MINUTES: "0"
+          AI_CAPTIONS: "1"
+          GITHUB_ACTIONS: "true"
+        run: |
+          if [ -z "$TELEGRAM_BOT_TOKEN" ] || [ -z "$TELEGRAM_CHANNEL_ID" ]; then
+            echo "Missing secrets: SIBSTAR_BOT_TOKEN and/or SIBSTAR_CHANNEL_ID"
+            exit 1
+          fi
+          if [ -z "$ADMIN_USER_IDS" ]; then
+            export ADMIN_USER_IDS="6325075744"
+          fi
+          if [ -z "$SIBSTAR_BASE_URL" ]; then
+            export SIBSTAR_BASE_URL="https://beta.sibstars.ir"
+          fi
+          timeout --signal=SIGINT 18000 npm start || code=$?
+          if [ "${code:-0}" = "124" ] || [ "${code:-0}" = "0" ]; then
+            exit 0
+          fi
+          exit "${code:-1}"
+
+      - name: Respawn next keep-alive job
+        if: always()
+        env:
+          GH_TOKEN: ${{ secrets.RESPAWN_PAT }}
+        run: |
+          if [ -z "$GH_TOKEN" ]; then
+            echo "RESPAWN_PAT missing — جاب بعدی خودکار روشن نمی‌شود (cron پشتیبان هست)"
+            exit 0
+          fi
+          gh workflow run "sibstar-content-bot.yml" --repo "$GITHUB_REPOSITORY"
+          echo "respawn requested"

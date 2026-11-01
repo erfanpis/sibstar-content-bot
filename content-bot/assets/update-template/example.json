@@ -1,0 +1,8 @@
+{
+  "appName": "نام برنامه",
+  "appNameEn": "APP NAME",
+  "version": "3.4.1",
+  "type": "app",
+  "icon": "./icons/demo-icon.png",
+  "output": "./output/update-post.png"
+}

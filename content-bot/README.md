@@ -1,0 +1,58 @@
+# ربات کانال سیب‌استار
+
+محتوا از **کاتالوگ واقعی سایت** می‌آید. مدیریت ادمین سه بخش جدا دارد.
+
+## حالت آزمایشی
+
+پیش‌فرض: **پست خودکار خاموش** (`DAILY_EVERY_HOURS=0` و `BANK_EVERY_MINUTES=0`).  
+همه‌چیز فقط بعد از پیش‌نمایش و ✅ خودت منتشر می‌شود.
+
+## منوی مدیریت
+
+1. **آپدیت‌های امروز** — لیست واقعی امروز → تیک بزن (حداکثر ۸) → کلاژ + کپشن
+2. **آپدیت تکی** — اسم یا لینک → کاور رسمی «به‌روزرسانی شد!»
+3. **معرفی** — اسم یا تصادفی → کپشن داستانی + عکس خوب
+
+بعد از پیش‌نمایش، دکمه‌های ✅ / ❌ زیر خود پست کافی است.
+
+## اجرا
+
+```bash
+cd content-bot
+cp .env.example .env   # پر کن
+npm install
+npm start
+```
+
+ربات را در کانال هدف ادمین کن (دسترسی Post Messages).  
+`TELEGRAM_CHANNEL_ID` را روی آیدی عددی همان کانال بگذار (مثلاً `-100…`).
+
+### ارسال به‌نام خود کانال (بدون دیده شدن ربات)
+در تلگرام → کانال → Administrators → `@autosibstarbot` → گزینه **Anonymous / ناشناس بمان** را روشن کن.  
+ربات نمی‌تواند این را خودش فعال کند؛ باید یک ادمین انسانی بزند. بعد از آن پست‌ها امضای ربات ندارند و مثل پست خود کانال می‌شوند.
+
+## متغیرها
+
+`TELEGRAM_BOT_TOKEN` · `TELEGRAM_CHANNEL_ID` · `ADMIN_USER_IDS` · `SIBSTAR_BASE_URL`
+
+## سورس و گیت
+
+سورس را در **ریپوی Private** نگه دار (GitHub رایگان Private یا Cursor).  
+فایل `.env` را commit نکن.
+
+## فعال ۲۴ساعته مثل لینک‌یار (GitHub Actions)
+
+ورک‌فلو: `.github/workflows/sibstar-content-bot.yml`
+
+هر جاب حدود ۵ ساعت long-poll می‌کند و با `RESPAWN_PAT` جاب بعدی را روشن می‌کند (مثل لینک‌یار).
+
+### Secrets (Settings → Secrets → Actions)
+
+| Secret | مقدار |
+|--------|--------|
+| `SIBSTAR_BOT_TOKEN` | توکن `@autosibstarbot` |
+| `SIBSTAR_CHANNEL_ID` | `-1001962844182` |
+| `SIBSTAR_ADMIN_USER_IDS` | آیدی عددی ادمین (مثلاً `6325075744`) |
+| `RESPAWN_PAT` | همان PAT لینک‌یار با مجوز `actions:write` |
+
+بعد از پوش: Actions → **SibStar content bot** → Run workflow.
