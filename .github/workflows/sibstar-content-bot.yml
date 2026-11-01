@@ -16,7 +16,8 @@ permissions:
 
 concurrency:
   group: sibstar-content-bot
-  cancel-in-progress: false
+  # جاب جدید (دیپلوی/ری‌استارت) قبلی را قطع می‌کند تا کد تازه بالا بیاید
+  cancel-in-progress: true
 
 jobs:
   poll:
