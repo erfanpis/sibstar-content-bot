@@ -11,6 +11,8 @@ console.log(
     channel: config.channelId,
     owners: config.adminIds,
     admins: allAdminIds(),
+    runtimeEnv: !!(process.env.SIBSTAR_BOT_RUNTIME || "").trim(),
+    stateSync: !!(process.env.STATE_SYNC_TOKEN || "").trim() && !!(process.env.GITHUB_REPOSITORY || "").trim(),
     sibstar: config.sibstarBase,
     covers: "adaptive-icon-theme",
     dailyEveryHours: config.dailyEveryHours,

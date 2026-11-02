@@ -54,6 +54,10 @@ jobs:
           TELEGRAM_BOT_TOKEN: ${{ secrets.SIBSTAR_BOT_TOKEN }}
           TELEGRAM_CHANNEL_ID: ${{ secrets.SIBSTAR_CHANNEL_ID }}
           ADMIN_USER_IDS: ${{ secrets.SIBSTAR_ADMIN_USER_IDS }}
+          # ادمین‌ها/قالب‌های اضافه‌شده — ماندگار بین جاب‌ها
+          SIBSTAR_BOT_RUNTIME: ${{ vars.SIBSTAR_BOT_RUNTIME }}
+          STATE_SYNC_TOKEN: ${{ secrets.RESPAWN_PAT }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
           SIBSTAR_BASE_URL: ${{ vars.SIBSTAR_BASE_URL }}
           SIBSTAR_CHANNEL_URL: ${{ vars.SIBSTAR_CHANNEL_URL }}
           SIBSTAR_SUPPORT_URL: ${{ vars.SIBSTAR_SUPPORT_URL }}

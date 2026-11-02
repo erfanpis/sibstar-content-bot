@@ -1,6 +1,7 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { runtimeFromEnv } from "./runtimePersist.js";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const STATE_PATH = process.env.BOT_STATE_PATH || join(root, "data", "state.json");
@@ -37,23 +38,35 @@ function empty(): BotState {
 }
 
 export function loadState(): BotState {
+  const fromEnv = runtimeFromEnv();
   try {
-    if (!existsSync(STATE_PATH)) return empty();
-    const j = JSON.parse(readFileSync(STATE_PATH, "utf8")) as BotState;
-    const extra = Array.isArray(j.extraAdminIds)
-      ? j.extraAdminIds.map((x) => Number(x)).filter((n) => Number.isFinite(n) && n > 0)
-      : [];
-    return {
-      introducedIds: Array.isArray(j.introducedIds) ? j.introducedIds : [],
-      nextKind: j.nextKind === "app" ? "app" : "game",
-      banking: j.banking && typeof j.banking === "object" ? j.banking : {},
-      watchlist: Array.isArray(j.watchlist) ? j.watchlist.map(String) : [],
-      lastDailyAt: j.lastDailyAt,
-      lastBankCheckAt: j.lastBankCheckAt,
-      extraAdminIds: [...new Set(extra)],
-      templates: j.templates && typeof j.templates === "object" ? j.templates : undefined,
-    };
+    const base = empty();
+    if (existsSync(STATE_PATH)) {
+      const j = JSON.parse(readFileSync(STATE_PATH, "utf8")) as BotState;
+      const extra = Array.isArray(j.extraAdminIds)
+        ? j.extraAdminIds.map((x) => Number(x)).filter((n) => Number.isFinite(n) && n > 0)
+        : [];
+      base.introducedIds = Array.isArray(j.introducedIds) ? j.introducedIds : [];
+      base.nextKind = j.nextKind === "app" ? "app" : "game";
+      base.banking = j.banking && typeof j.banking === "object" ? j.banking : {};
+      base.watchlist = Array.isArray(j.watchlist) ? j.watchlist.map(String) : [];
+      base.lastDailyAt = j.lastDailyAt;
+      base.lastBankCheckAt = j.lastBankCheckAt;
+      base.extraAdminIds = [...new Set(extra)];
+      base.templates = j.templates && typeof j.templates === "object" ? j.templates : undefined;
+    }
+    // Variable گیت‌هاب منبع حقیقت برای ادمین/قالب بین جاب‌هاست
+    if (fromEnv) {
+      base.extraAdminIds = [...new Set([...(base.extraAdminIds || []), ...fromEnv.extraAdminIds])];
+      if (fromEnv.templates) {
+        base.templates = { ...(base.templates || {}), ...fromEnv.templates };
+      }
+    }
+    return base;
   } catch {
+    if (fromEnv) {
+      return { ...empty(), extraAdminIds: fromEnv.extraAdminIds, templates: fromEnv.templates };
+    }
     return empty();
   }
 }

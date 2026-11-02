@@ -6,6 +6,7 @@ import {
   isAdmin,
   isOwner,
   ownerIds,
+  parseTelegramUserId,
   removeAdmin,
 } from "./admins.js";
 import { bankUpdateCaption, introCaption, updateReleaseCaption } from "./captions.js";
@@ -54,7 +55,10 @@ const BTN = {
   menu: "📋 راهنما",
 } as const;
 
-const DENIED = "دسترسی نداری — فقط ادمین‌های سیب‌استار.";
+function deniedText(userId?: number): string {
+  const id = userId ? `\nآیدی تو: <code>${userId}</code>\nاین عدد را به صاحب ربات بده.` : "";
+  return `دسترسی نداری — فقط ادمین‌های سیب‌استار.${id}`;
+}
 
 function mainKeyboard() {
   return new Keyboard()
@@ -487,42 +491,58 @@ export function createBot() {
   const withMenu = { reply_markup: mainKeyboard() };
 
   bot.command("start", async (ctx) => {
-    if (!isAdmin(ctx.from?.id)) return ctx.reply(DENIED);
+    if (!isAdmin(ctx.from?.id)) {
+      return ctx.reply(deniedText(ctx.from?.id), { parse_mode: "HTML" });
+    }
     awaiting.delete(ctx.from!.id);
     await ctx.reply(helpText(), withMenu);
   });
   bot.command("menu", async (ctx) => {
-    if (!isAdmin(ctx.from?.id)) return ctx.reply(DENIED);
+    if (!isAdmin(ctx.from?.id)) {
+      return ctx.reply(deniedText(ctx.from?.id), { parse_mode: "HTML" });
+    }
     awaiting.delete(ctx.from!.id);
     await ctx.reply(helpText(), withMenu);
   });
   bot.command("help", async (ctx) => {
-    if (!isAdmin(ctx.from?.id)) return ctx.reply(DENIED);
+    if (!isAdmin(ctx.from?.id)) {
+      return ctx.reply(deniedText(ctx.from?.id), { parse_mode: "HTML" });
+    }
     await ctx.reply(helpText(), withMenu);
   });
   bot.command("today", async (ctx) => {
-    if (!isAdmin(ctx.from?.id)) return ctx.reply(DENIED);
+    if (!isAdmin(ctx.from?.id)) {
+      return ctx.reply(deniedText(ctx.from?.id), { parse_mode: "HTML" });
+    }
     awaiting.delete(ctx.from!.id);
     await openTodayPicker(ctx);
   });
   bot.command("update", async (ctx) => {
-    if (!isAdmin(ctx.from?.id)) return ctx.reply(DENIED);
+    if (!isAdmin(ctx.from?.id)) {
+      return ctx.reply(deniedText(ctx.from?.id), { parse_mode: "HTML" });
+    }
     const arg = (ctx.match || "").toString().trim();
     await doModeSearch(ctx, arg, "update");
   });
   bot.command("intro", async (ctx) => {
-    if (!isAdmin(ctx.from?.id)) return ctx.reply(DENIED);
+    if (!isAdmin(ctx.from?.id)) {
+      return ctx.reply(deniedText(ctx.from?.id), { parse_mode: "HTML" });
+    }
     const arg = (ctx.match || "").toString().trim();
     if (arg) await doModeSearch(ctx, arg, "intro");
     else await openIntroMenu(ctx);
   });
   bot.command("settings", async (ctx) => {
-    if (!isAdmin(ctx.from?.id)) return ctx.reply(DENIED);
+    if (!isAdmin(ctx.from?.id)) {
+      return ctx.reply(deniedText(ctx.from?.id), { parse_mode: "HTML" });
+    }
     awaiting.delete(ctx.from!.id);
     await openSettings(ctx);
   });
   bot.command("status", async (ctx) => {
-    if (!isAdmin(ctx.from?.id)) return ctx.reply(DENIED);
+    if (!isAdmin(ctx.from?.id)) {
+      return ctx.reply(deniedText(ctx.from?.id), { parse_mode: "HTML" });
+    }
     const st = loadState();
     const apps = await fetchCatalog();
     const today = appsUpdatedToday(apps);
@@ -538,13 +558,17 @@ export function createBot() {
     );
   });
   bot.command("publish", async (ctx) => {
-    if (!isAdmin(ctx.from?.id)) return ctx.reply(DENIED);
+    if (!isAdmin(ctx.from?.id)) {
+      return ctx.reply(deniedText(ctx.from?.id), { parse_mode: "HTML" });
+    }
     const p = pending.get(ctx.from!.id);
     if (!p) return ctx.reply("پیش‌نمایش نداری.", withMenu);
     await publishPending(ctx.api, (t) => ctx.reply(t, withMenu), p, ctx.from!.id);
   });
   bot.command("cancel", async (ctx) => {
-    if (!isAdmin(ctx.from?.id)) return ctx.reply(DENIED);
+    if (!isAdmin(ctx.from?.id)) {
+      return ctx.reply(deniedText(ctx.from?.id), { parse_mode: "HTML" });
+    }
     pending.delete(ctx.from!.id);
     awaiting.delete(ctx.from!.id);
     todayDraft.delete(ctx.from!.id);
@@ -612,7 +636,12 @@ export function createBot() {
     awaiting.set(ctx.from.id, "admin_add");
     await ctx.answerCallbackQuery();
     await ctx.reply(
-      "آیدی عددی تلگرام ادمین جدید را بفرست.\n(طرف مقابل /id بزند و عدد را کپی کند)\nبرای لغو: /cancel",
+      [
+        "آیدی عددی تلگرام ادمین جدید را بفرست.",
+        "یا یک پیام از او را اینجا Forward کن.",
+        "طرف مقابل می‌تواند /start یا /id بزند و عدد را کپی کند.",
+        "لغو: /cancel",
+      ].join("\n"),
       withMenu,
     );
   });
@@ -620,9 +649,9 @@ export function createBot() {
   bot.callbackQuery(/^adel:(\d+)$/, async (ctx) => {
     if (!isOwner(ctx.from?.id)) return ctx.answerCallbackQuery({ text: "فقط صاحب", show_alert: true });
     const id = Number(ctx.match![1]);
-    const r = removeAdmin(id);
+    const r = await removeAdmin(id);
     if (!r.ok) return ctx.answerCallbackQuery({ text: r.reason, show_alert: true });
-    await ctx.answerCallbackQuery({ text: "حذف شد" });
+    await ctx.answerCallbackQuery({ text: r.sync === "ok" ? "حذف و ذخیره شد" : "حذف شد" });
     try {
       await ctx.editMessageText(adminsListText(), {
         parse_mode: "HTML",
@@ -683,7 +712,7 @@ export function createBot() {
     if (!isAdmin(ctx.from?.id)) return ctx.answerCallbackQuery({ text: "نه", show_alert: true });
     const which = ctx.match![1]!;
     if (which === "all") {
-      resetAllTemplates();
+      await resetAllTemplates();
       await ctx.answerCallbackQuery({ text: "همه پیش‌فرض شد" });
       try {
         await ctx.editMessageText("📝 قالب‌ها به پیش‌فرض برگشت.\nیکی را انتخاب کن:", {
@@ -695,7 +724,7 @@ export function createBot() {
       return;
     }
     if (!isTemplateKey(which)) return ctx.answerCallbackQuery({ text: "نامعتبر", show_alert: true });
-    resetTemplate(which);
+    await resetTemplate(which);
     await ctx.answerCallbackQuery({ text: "پیش‌فرض شد" });
     const meta = TEMPLATE_META.find((m) => m.key === which)!;
     const cur = getTemplate(which);
@@ -806,8 +835,25 @@ export function createBot() {
     }
   });
 
+  async function finishAddAdmin(ctx: { reply: (t: string, extra?: object) => Promise<unknown>; from?: { id: number } }, id: number) {
+    if (!isOwner(ctx.from?.id)) return void (await ctx.reply("فقط صاحب می‌تواند ادمین اضافه کند.", withMenu));
+    const r = await addAdmin(id);
+    if (!r.ok) return void (await ctx.reply(r.reason, withMenu));
+    const syncNote =
+      r.sync === "ok" || r.sync === "owner"
+        ? "ذخیره ماندگار شد."
+        : `⚠️ ذخیره موقت این جاب — همگام‌سازی: ${r.sync}`;
+    await ctx.reply(
+      (r.already ? `همین الان ادمین بود: <code>${id}</code>` : `✅ ادمین شد: <code>${id}</code>`) +
+        `\n${syncNote}\nطرف مقابل دوباره /start بزند.`,
+      { parse_mode: "HTML", ...withMenu },
+    );
+  }
+
   bot.on("message:text", async (ctx) => {
-    if (!isAdmin(ctx.from?.id)) return void (await ctx.reply(DENIED));
+    if (!isAdmin(ctx.from?.id)) {
+      return void (await ctx.reply(deniedText(ctx.from?.id), { parse_mode: "HTML" }));
+    }
     const text = ctx.message.text.trim();
     if (text.startsWith("/")) return;
 
@@ -838,14 +884,15 @@ export function createBot() {
     const wait = awaiting.get(ctx.from.id);
     if (wait === "admin_add") {
       awaiting.delete(ctx.from.id);
-      if (!isOwner(ctx.from.id)) return void (await ctx.reply("فقط صاحب می‌تواند ادمین اضافه کند.", withMenu));
-      const id = Number(text.replace(/[^\d]/g, ""));
-      const r = addAdmin(id);
-      if (!r.ok) return void (await ctx.reply(r.reason, withMenu));
-      await ctx.reply(
-        r.already ? `همین الان ادمین بود: <code>${id}</code>` : `✅ ادمین شد: <code>${id}</code>`,
-        { parse_mode: "HTML", ...withMenu },
-      );
+      const fwdId = (ctx.message as { forward_from?: { id: number } }).forward_from?.id;
+      const id = fwdId || parseTelegramUserId(text);
+      if (!id) {
+        return void (await ctx.reply(
+          "آیدی نامعتبر. فقط عدد بفرست، یا یک پیام از او Forward کن (اگر حریم خصوصی‌اش بسته باشد باید /id بزند).",
+          withMenu,
+        ));
+      }
+      await finishAddAdmin(ctx, id);
       return;
     }
     if (wait?.startsWith("tpl_edit:")) {
@@ -853,7 +900,7 @@ export function createBot() {
       const key = wait.slice("tpl_edit:".length);
       if (!isTemplateKey(key)) return void (await ctx.reply("کلید نامعتبر.", withMenu));
       if (!text.trim()) return void (await ctx.reply("متن خالی قبول نیست.", withMenu));
-      setTemplate(key, text);
+      await setTemplate(key, text);
       await ctx.reply(`✅ قالب «${TEMPLATE_META.find((m) => m.key === key)!.title}» ذخیره شد.`, withMenu);
       return;
     }
@@ -889,6 +936,31 @@ export function createBot() {
     if (/sibstars\.ir\/app\//i.test(text)) {
       await doModeSearch(ctx, text, "update");
     }
+  });
+
+  // فوروارد پیام برای افزودن ادمین (آیدی از فرستنده اصلی)
+  bot.on("message", async (ctx, next) => {
+    if (!ctx.from || !isAdmin(ctx.from.id)) return next();
+    if (awaiting.get(ctx.from.id) !== "admin_add") return next();
+    const msg = ctx.message as unknown as {
+      forward_from?: { id: number };
+      forward_origin?: unknown;
+      text?: string;
+    } | undefined;
+    const fwd = msg?.forward_from;
+    if (!fwd?.id) {
+      if (msg?.forward_origin && !msg.text) {
+        awaiting.delete(ctx.from.id);
+        await ctx.reply(
+          "این فوروارد آیدی را نشان نمی‌دهد (حریم خصوصی). طرف مقابل /id بزند و عدد را بفرست.",
+          withMenu,
+        );
+        return;
+      }
+      return next();
+    }
+    awaiting.delete(ctx.from.id);
+    await finishAddAdmin(ctx, fwd.id);
   });
 
   bot.catch((err) => console.error("bot error", err));

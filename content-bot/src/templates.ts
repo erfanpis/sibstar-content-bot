@@ -1,4 +1,14 @@
+import { syncRuntimeBlob } from "./runtimePersist.js";
 import { loadState, saveState, type CaptionTemplates } from "./state.js";
+
+async function persistTemplates(): Promise<void> {
+  const st = loadState();
+  const sync = await syncRuntimeBlob({
+    extraAdminIds: [...(st.extraAdminIds || [])],
+    templates: st.templates,
+  });
+  if (!sync.ok) console.warn("[templates] sync failed", sync.detail);
+}
 
 export type TemplateKey = keyof CaptionTemplates;
 
@@ -77,24 +87,27 @@ export function getTemplate(key: TemplateKey): string {
   return getTemplates()[key];
 }
 
-export function setTemplate(key: TemplateKey, value: string): void {
+export async function setTemplate(key: TemplateKey, value: string): Promise<void> {
   const st = loadState();
   st.templates = { ...getTemplates(), [key]: value.trim() };
   saveState(st);
+  await persistTemplates();
 }
 
-export function resetTemplate(key: TemplateKey): void {
+export async function resetTemplate(key: TemplateKey): Promise<void> {
   const st = loadState();
   const next = { ...getTemplates() };
   next[key] = DEFAULT_TEMPLATES[key];
   st.templates = next;
   saveState(st);
+  await persistTemplates();
 }
 
-export function resetAllTemplates(): void {
+export async function resetAllTemplates(): Promise<void> {
   const st = loadState();
   st.templates = { ...DEFAULT_TEMPLATES };
   saveState(st);
+  await persistTemplates();
 }
 
 export function fillTemplate(tpl: string, vars: Record<string, string>): string {
